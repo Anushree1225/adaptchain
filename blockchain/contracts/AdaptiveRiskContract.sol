@@ -1,14 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+/**
+ * @title AdaptiveRiskContract
+ * @notice Risk-aware decentralized transaction escrow and execution contract.
+ * Integrates an off-chain AI/ML risk scoring engine with automated execution policy,
+ * reentrancy protection, role-based access control, and sender timelock refunds.
+ */
 contract AdaptiveRiskContract {
     // --------------------------------------------------
-    // 1. Roles
+    // 1. Roles & State Variables
     // --------------------------------------------------
 
     address public owner;
     address public riskOracle;
     address public reviewer;
+
+    // Minimum timelock window after which a sender can reclaim funds stuck in review
+    uint256 public constant REVIEW_TIMEOUT = 1 days;
+
+    // Mutex flag for native gas-efficient Reentrancy Protection
+    uint256 private _status;
+    uint256 private constant _NOT_ENTERED = 1;
+    uint256 private constant _ENTERED = 2;
 
     // --------------------------------------------------
     // 2. Risk levels and transaction states
@@ -27,7 +41,8 @@ contract AdaptiveRiskContract {
         PENDING_REVIEW,
         APPROVED,
         REJECTED,
-        EXECUTED
+        EXECUTED,
+        REFUNDED
     }
 
     // --------------------------------------------------
@@ -54,7 +69,6 @@ contract AdaptiveRiskContract {
     // --------------------------------------------------
 
     uint256 private nextTransactionId = 1;
-
     mapping(uint256 => Transaction) public transactions;
 
     // --------------------------------------------------
@@ -92,9 +106,28 @@ contract AdaptiveRiskContract {
         uint256 amount
     );
 
+    event TransactionRefunded(
+        uint256 indexed transactionId,
+        address indexed sender,
+        uint256 amount
+    );
+
+    event RoleUpdated(
+        string indexed role,
+        address indexed oldAddress,
+        address indexed newAddress
+    );
+
     // --------------------------------------------------
     // 6. Modifiers
     // --------------------------------------------------
+
+    modifier nonReentrant() {
+        require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
+        _status = _ENTERED;
+        _;
+        _status = _NOT_ENTERED;
+    }
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner can perform this action");
@@ -125,6 +158,7 @@ contract AdaptiveRiskContract {
         owner = msg.sender;
         riskOracle = msg.sender;
         reviewer = msg.sender;
+        _status = _NOT_ENTERED;
     }
 
     // --------------------------------------------------
@@ -133,16 +167,27 @@ contract AdaptiveRiskContract {
 
     function updateRiskOracle(address _riskOracle) external onlyOwner {
         require(_riskOracle != address(0), "Invalid oracle address");
+        address old = riskOracle;
         riskOracle = _riskOracle;
+        emit RoleUpdated("ORACLE", old, _riskOracle);
     }
 
     function updateReviewer(address _reviewer) external onlyOwner {
         require(_reviewer != address(0), "Invalid reviewer address");
+        address old = reviewer;
         reviewer = _reviewer;
+        emit RoleUpdated("REVIEWER", old, _reviewer);
+    }
+
+    function transferOwnership(address _newOwner) external onlyOwner {
+        require(_newOwner != address(0), "Invalid new owner");
+        address old = owner;
+        owner = _newOwner;
+        emit RoleUpdated("OWNER", old, _newOwner);
     }
 
     // --------------------------------------------------
-    // 9. Submit a transaction
+    // 9. Submit a transaction into Escrow
     // --------------------------------------------------
 
     function submitTransaction(
@@ -179,14 +224,14 @@ contract AdaptiveRiskContract {
     }
 
     // --------------------------------------------------
-    // 10. Submit ML risk score
+    // 10. Submit ML risk score (Oracle Only)
     // --------------------------------------------------
 
     function submitRiskScore(
         uint256 _transactionId,
         uint256 _riskScore,
         string calldata _riskReason
-    ) external onlyRiskOracle {
+    ) external onlyRiskOracle nonReentrant {
         Transaction storage txn = transactions[_transactionId];
 
         require(txn.id != 0, "Transaction does not exist");
@@ -229,7 +274,7 @@ contract AdaptiveRiskContract {
 
     function approveTransaction(
         uint256 _transactionId
-    ) external onlyReviewer {
+    ) external onlyReviewer nonReentrant {
         Transaction storage txn = transactions[_transactionId];
 
         require(txn.id != 0, "Transaction does not exist");
@@ -247,12 +292,12 @@ contract AdaptiveRiskContract {
     }
 
     // --------------------------------------------------
-    // 12. Reviewer rejects a transaction
+    // 12. Reviewer rejects a transaction (Refunds Sender)
     // --------------------------------------------------
 
     function rejectTransaction(
         uint256 _transactionId
-    ) external onlyReviewer {
+    ) external onlyReviewer nonReentrant {
         Transaction storage txn = transactions[_transactionId];
 
         require(txn.id != 0, "Transaction does not exist");
@@ -262,15 +307,45 @@ contract AdaptiveRiskContract {
             "Transaction is not awaiting review"
         );
 
+        // State update before transfer (Checks-Effects-Interactions)
         txn.status = TransactionStatus.REJECTED;
 
-        payable(txn.sender).transfer(txn.amount);
-
         emit TransactionRejected(_transactionId, msg.sender);
+
+        (bool success, ) = txn.sender.call{value: txn.amount}("");
+        require(success, "Refund to sender failed");
     }
 
     // --------------------------------------------------
-    // 13. Internal execution function
+    // 13. Sender Timelock Escape Hatch (Reclaim Stuck Funds)
+    // --------------------------------------------------
+
+    function reclaimTimedOutTransaction(
+        uint256 _transactionId
+    ) external nonReentrant {
+        Transaction storage txn = transactions[_transactionId];
+
+        require(txn.id != 0, "Transaction does not exist");
+        require(msg.sender == txn.sender, "Only sender can reclaim");
+        require(
+            txn.status == TransactionStatus.PENDING_REVIEW,
+            "Transaction not in review"
+        );
+        require(
+            block.timestamp >= txn.timestamp + REVIEW_TIMEOUT,
+            "Review timelock has not expired"
+        );
+
+        txn.status = TransactionStatus.REFUNDED;
+
+        emit TransactionRefunded(_transactionId, txn.sender, txn.amount);
+
+        (bool success, ) = txn.sender.call{value: txn.amount}("");
+        require(success, "Reclaim transfer failed");
+    }
+
+    // --------------------------------------------------
+    // 14. Internal execution function (Checks-Effects-Interactions)
     // --------------------------------------------------
 
     function _executeTransaction(uint256 _transactionId) internal {
@@ -283,19 +358,21 @@ contract AdaptiveRiskContract {
             "Transaction is not approved for execution"
         );
 
+        // State update BEFORE external call
         txn.status = TransactionStatus.EXECUTED;
-
-        txn.recipient.transfer(txn.amount);
 
         emit TransactionExecuted(
             _transactionId,
             txn.recipient,
             txn.amount
         );
+
+        (bool success, ) = txn.recipient.call{value: txn.amount}("");
+        require(success, "ETH transfer to recipient failed");
     }
 
     // --------------------------------------------------
-    // 14. View transaction details
+    // 15. View transaction details
     // --------------------------------------------------
 
     function getTransaction(
@@ -314,11 +391,14 @@ contract AdaptiveRiskContract {
     }
 
     // --------------------------------------------------
-    // 15. Emergency withdrawal
+    // 16. Emergency withdrawal (Owner Only)
     // --------------------------------------------------
 
-    function emergencyWithdraw() external onlyOwner {
-        payable(owner).transfer(address(this).balance);
+    function emergencyWithdraw() external onlyOwner nonReentrant {
+        uint256 balance = address(this).balance;
+        require(balance > 0, "No funds to withdraw");
+        (bool success, ) = payable(owner).call{value: balance}("");
+        require(success, "Emergency withdraw failed");
     }
 
     receive() external payable {}
