@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AdaptChain Dashboard | Risk-Aware Execution</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0f172a',
+                        cardBg: '#1e293b',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-darkBg text-slate-100 min-h-screen font-sans antialiased">
+
+    <!-- Header -->
+    <header class="border-b border-slate-800 bg-cardBg/50 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-600 p-2 rounded-lg font-bold text-xl tracking-wider">⚡ AC</div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">AdaptChain</h1>
+                    <p class="text-xs text-slate-400">AI-Assisted Adaptive Smart Contract Engine</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span id="connection-status" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span class="w-2 h-2 mr-1.5 bg-emerald-400 rounded-full animate-pulse"></span> Backend Connected (Port 5000)
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Lifecycle Pipeline Stepper -->
+    <div class="max-w-7xl mx-auto px-6 pt-6 pb-2">
+        <div class="bg-cardBg border border-slate-800 rounded-2xl p-4 shadow-lg flex flex-wrap items-center justify-between gap-4">
+            <div id="step-node-1" class="flex items-center space-x-2 text-indigo-400 font-semibold text-xs tracking-wider uppercase">
+                <span class="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shadow-md shadow-indigo-500/30">1</span>
+                <span>Payload Input</span>
+            </div>
+            <div class="h-0.5 w-8 sm:w-16 bg-slate-800" id="step-line-1"></div>
+            <div id="step-node-2" class="flex items-center space-x-2 text-slate-500 font-semibold text-xs tracking-wider uppercase">
+                <span class="w-6 h-6 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-bold border border-slate-700">2</span>
+                <span>Contract Deposit</span>
+            </div>
+            <div class="h-0.5 w-8 sm:w-16 bg-slate-800" id="step-line-2"></div>
+            <div id="step-node-3" class="flex items-center space-x-2 text-slate-500 font-semibold text-xs tracking-wider uppercase">
+                <span class="w-6 h-6 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-bold border border-slate-700">3</span>
+                <span>ML Risk Analysis</span>
+            </div>
+            <div class="h-0.5 w-8 sm:w-16 bg-slate-800" id="step-line-3"></div>
+            <div id="step-node-4" class="flex items-center space-x-2 text-slate-500 font-semibold text-xs tracking-wider uppercase">
+                <span class="w-6 h-6 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-bold border border-slate-700">4</span>
+                <span>On-Chain Settlement</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Grid Container -->
+    <main class="max-w-7xl mx-auto px-6 py-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        <!-- Column 1 & 2: Transaction Input & Analysis Results -->
+        <div class="lg:col-span-2 space-y-8">
+            
+            <!-- Step 1: Input Transaction Form -->
+            <section class="bg-cardBg border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold flex items-center text-indigo-400">
+                        <span class="bg-indigo-500/10 text-indigo-400 w-7 h-7 rounded-full inline-flex items-center justify-center text-sm mr-2 border border-indigo-500/20">1</span>
+                        Simulate Transaction Payload
+                    </h2>
+                    <span class="text-xs text-slate-500">Live Simulation Sandbox</span>
+                </div>
+                <form id="tx-form" onsubmit="handleSimulation(event)" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Recipient / Wallet Address</label>
+                        <input type="text" id="wallet" value="0x71c6615b13b2e15a0c8b986a42edc78e8994389a" placeholder="0x..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 font-mono" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Transaction Amount (ETH)</label>
+                        <input type="number" id="amount" step="0.01" value="0.05" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Daily Frequency Count</label>
+                        <input type="number" id="frequency" value="3" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Failed Contract Calls</label>
+                        <input type="number" id="failed-calls" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500" required>
+                    </div>
+                    <div class="sm:col-span-2 pt-2">
+                        <button type="submit" id="submit-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-lg transition-all shadow-lg shadow-indigo-600/20 text-sm flex items-center justify-center space-x-2">
+                            <span id="btn-spinner" class="hidden w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                            <span id="btn-text">Run ML Risk Analysis & Enforce Policy</span>
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Step 2: AI Engine Risk Assessment Results -->
+            <section class="bg-cardBg border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <h2 class="text-lg font-semibold mb-4 flex items-center text-indigo-400">
+                    <span class="bg-indigo-500/10 text-indigo-400 w-7 h-7 rounded-full inline-flex items-center justify-center text-sm mr-2 border border-indigo-500/20">2</span>
+                    AI Risk Engine Output
+                </h2>
+                
+                <div id="risk-display-area" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center bg-slate-900/50 p-4 rounded-xl border border-slate-800/80">
+                    <div class="text-center sm:text-left">
+                        <p class="text-xs text-slate-400 uppercase tracking-wider">Calculated Risk Score</p>
+                        <div class="text-4xl font-extrabold mt-1 text-slate-500" id="score-val">--<span class="text-lg text-slate-600">/100</span></div>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-xs text-slate-400 uppercase tracking-wider">Risk Classification</p>
+                        <span id="level-badge" class="mt-2 inline-block px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700">
+                            AWAITING INPUT
+                        </span>
+                    </div>
+                    <div class="text-center sm:text-right">
+                        <p class="text-xs text-slate-400 uppercase tracking-wider">Model Version</p>
+                        <p class="text-sm font-mono text-slate-300 mt-1">v1.2.0-rf (Adaptive)</p>
+                    </div>
+                </div>
+
+                <!-- Risk Factors / Reasons -->
+                <div class="mt-4">
+                    <p class="text-xs font-medium text-slate-400 mb-2">Triggered Anomaly Indicators:</p>
+                    <ul id="reasons-list" class="space-y-1.5 text-sm text-slate-300">
+                        <li class="flex items-center space-x-2 bg-slate-900/30 px-3 py-1.5 rounded-lg border border-slate-800 text-slate-500 italic">
+                            <span>Submit a transaction payload to see real-time triggers...</span>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- Column 3: Smart Contract Enforcement & Human Review Panel -->
+        <div class="space-y-8">
+            
+            <!-- Step 3: Smart Contract State -->
+            <section class="bg-cardBg border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <h2 class="text-lg font-semibold mb-4 flex items-center text-indigo-400">
+                    <span class="bg-indigo-500/10 text-indigo-400 w-7 h-7 rounded-full inline-flex items-center justify-center text-sm mr-2 border border-indigo-500/20">3</span>
+                    Smart Contract Status
+                </h2>
+                
+                <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 text-center space-y-3">
+                    <p class="text-xs text-slate-400">Enforced Execution State</p>
+                    <div id="contract-state-box" class="py-2 px-4 rounded-lg font-bold text-base bg-slate-800 text-slate-400 border border-slate-700 inline-block">
+                        ⏳ STANDBY
+                    </div>
+                    <p class="text-xs text-slate-500">Contract policy executes automatically based on the returned AI risk score.</p>
+                </div>
+            </section>
+
+            <!-- Step 4: Human Reviewer Actions -->
+            <section class="bg-cardBg border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold flex items-center text-indigo-400">
+                        <span class="bg-indigo-500/10 text-indigo-400 w-7 h-7 rounded-full inline-flex items-center justify-center text-sm mr-2 border border-indigo-500/20">4</span>
+                        Reviewer Console
+                    </h2>
+                    <span id="review-pulse" class="hidden flex h-2.5 w-2.5 relative">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+                    </span>
+                </div>
+                
+                <p id="review-desc" class="text-xs text-slate-400 mb-4">Manual auditor clearance is active only when a transaction requires human review.</p>
+                
+                <div class="flex space-x-3">
+                    <button id="approve-btn" onclick="resolveTransaction('APPROVED')" disabled class="flex-1 bg-slate-800 text-slate-600 border border-slate-700 font-medium py-2.5 rounded-lg transition-all text-sm cursor-not-allowed">
+                        Approve Tx
+                    </button>
+                    <button id="reject-btn" onclick="resolveTransaction('REJECTED')" disabled class="flex-1 bg-slate-800 text-slate-600 border border-slate-700 font-medium py-2.5 rounded-lg transition-all text-sm cursor-not-allowed">
+                        Reject Tx
+                    </button>
+                </div>
+
+                <div id="audit-log-status" class="mt-4 pt-4 border-t border-slate-800 text-xs text-slate-500 font-mono">
+                    Audit Log: Awaiting simulation dispatch...
+                </div>
+            </section>
+
+        </div>
+
+        <!-- Full Width: Real-time Transaction Ledger & Audit History -->
+        <div class="lg:col-span-3">
+            <section class="bg-cardBg border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-200">On-Chain Transaction Ledger</h2>
+                        <p class="text-xs text-slate-400">Historical trace of all evaluated and executed transactions</p>
+                    </div>
+                    <button onclick="fetchHistory()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 border border-slate-700 transition">
+                        ↻ Refresh Ledger
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-900/80 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
+                            <tr>
+                                <th class="py-3 px-4">Tx ID</th>
+                                <th class="py-3 px-4">Recipient</th>
+                                <th class="py-3 px-4">Amount</th>
+                                <th class="py-3 px-4">Risk Score</th>
+                                <th class="py-3 px-4">Classification</th>
+                                <th class="py-3 px-4">Final Status</th>
+                                <th class="py-3 px-4">On-Chain TxHash</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body" class="divide-y divide-slate-800/60 font-mono">
+                            <tr>
+                                <td colspan="7" class="py-4 text-center text-slate-500 italic">No transactions recorded yet in this session.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+    </main>
+
+    <!-- Backend Integration Script -->
+    <script>
+        let currentTransactionId = null;
+
+        // Fetch transaction history on load
+        window.addEventListener('DOMContentLoaded', () => {
+            fetchHistory();
+        });
+
+        function updateStepper(step) {
+            // Steps: 1 = Input, 2 = Deposited, 3 = Scored, 4 = Settled
+            for (let i = 1; i <= 4; i++) {
+                const node = document.getElementById(`step-node-${i}`);
+                const line = document.getElementById(`step-line-${i}`);
+                const badge = node ? node.querySelector('span:first-child') : null;
+
+                if (!node) continue;
+
+                if (i <= step) {
+                    node.className = "flex items-center space-x-2 text-indigo-400 font-semibold text-xs tracking-wider uppercase";
+                    if (badge) {
+                        badge.className = "w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shadow-md shadow-indigo-500/30";
+                    }
+                    if (line) line.className = "h-0.5 w-8 sm:w-16 bg-indigo-500/50";
+                } else {
+                    node.className = "flex items-center space-x-2 text-slate-500 font-semibold text-xs tracking-wider uppercase";
+                    if (badge) {
+                        badge.className = "w-6 h-6 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-bold border border-slate-700";
+                    }
+                    if (line) line.className = "h-0.5 w-8 sm:w-16 bg-slate-800";
+                }
+            }
+        }
+
+        function setReviewButtons(enabled, alertMessage = '') {
+            const approveBtn = document.getElementById('approve-btn');
+            const rejectBtn = document.getElementById('reject-btn');
+            const pulse = document.getElementById('review-pulse');
+            const desc = document.getElementById('review-desc');
+
+            if (enabled) {
+                approveBtn.disabled = false;
+                approveBtn.className = "flex-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 font-medium py-2.5 rounded-lg transition-all text-sm cursor-pointer shadow-lg shadow-emerald-500/10";
+
+                rejectBtn.disabled = false;
+                rejectBtn.className = "flex-1 bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/30 font-medium py-2.5 rounded-lg transition-all text-sm cursor-pointer shadow-lg shadow-rose-500/10";
+
+                pulse.classList.remove('hidden');
+                desc.innerHTML = `<span class="text-amber-400 font-semibold">Action Required:</span> Transaction is held in custody awaiting auditor sign-off.`;
+            } else {
+                approveBtn.disabled = true;
+                approveBtn.className = "flex-1 bg-slate-800 text-slate-600 border border-slate-700 font-medium py-2.5 rounded-lg transition-all text-sm cursor-not-allowed";
+
+                rejectBtn.disabled = true;
+                rejectBtn.className = "flex-1 bg-slate-800 text-slate-600 border border-slate-700 font-medium py-2.5 rounded-lg transition-all text-sm cursor-not-allowed";
+
+                pulse.classList.add('hidden');
+                desc.innerText = alertMessage || "Manual auditor clearance is active only when a transaction requires human review.";
+            }
+        }
+
+        async function handleSimulation(event) {
+            event.preventDefault();
+            
+            const submitBtn = document.getElementById('submit-btn');
+            const btnSpinner = document.getElementById('btn-spinner');
+            const btnText = document.getElementById('btn-text');
+            const logBox = document.getElementById('audit-log-status');
+
+            const payload = {
+                wallet: document.getElementById('wallet').value.trim(),
+                amount: parseFloat(document.getElementById('amount').value),
+                frequency: parseInt(document.getElementById('frequency').value),
+                failedCalls: parseInt(document.getElementById('failed-calls').value)
+            };
+
+            // Loading state
+            submitBtn.disabled = true;
+            btnSpinner.classList.remove('hidden');
+            btnText.innerText = "Evaluating Risk & Minting On-Chain...";
+            setReviewButtons(false, "Processing live simulation...");
+            updateStepper(2);
+
+            logBox.innerText = "Audit Log: Submitting transaction to smart contract & running ML risk engine...";
+
+            try {
+                const response = await fetch('http://localhost:5000/api/transaction/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.error || `Server returned status ${response.status}`);
+                }
+
+                const data = await response.json();
+                if (data.transactionId) {
+                    currentTransactionId = data.transactionId;
+                }
+                updateDashboardUI(data);
+                fetchHistory();
+
+            } catch (error) {
+                console.error("API Error:", error);
+                logBox.innerHTML = `Audit Log: <span class="text-rose-400">Error:</span> ${error.message || 'Make sure backend is running on port 5000.'}`;
+                updateStepper(1);
+            } finally {
+                submitBtn.disabled = false;
+                btnSpinner.classList.add('hidden');
+                btnText.innerText = "Run ML Risk Analysis & Enforce Policy";
+            }
+        }
+
+        function updateDashboardUI(data) {
+            const score = (data.riskScore !== undefined) ? data.riskScore : (data.score || 0);
+            const level = data.riskLevel || data.level || "LOW";
+            const reasons = data.reasons || ["Transaction behavior matches normal historical parameters."];
+            const txId = data.transactionId || currentTransactionId;
+            const status = data.status; // 1=AUTO_EXEC, 2=PENDING_REVIEW, 3=APPROVED, 4=REJECTED, 5=EXECUTED
+
+            // Update Score & Color
+            document.getElementById('score-val').innerHTML = `${score}<span class="text-lg text-slate-500">/100</span>`;
+            
+            let colorClass = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+            let contractState = "⚡ EXECUTED AUTOMATICALLY";
+            let contractStateClass = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+            let scoreTextColor = "text-emerald-400";
+            let isPendingReview = (status === 2 || (score > 30 && status !== 5 && status !== 1));
+
+            if (score > 30 && score <= 70) {
+                colorClass = "bg-amber-500/10 text-amber-400 border-amber-500/20";
+                contractState = isPendingReview ? "🟡 HELD FOR HUMAN REVIEW" : "⚡ EXECUTED ON-CHAIN";
+                contractStateClass = isPendingReview ? "bg-amber-500/10 text-amber-400 border-amber-500/20" : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+                scoreTextColor = "text-amber-400";
+            } else if (score > 70) {
+                colorClass = "bg-rose-500/10 text-rose-400 border-rose-500/20";
+                contractState = isPendingReview ? "🔒 HELD / HIGH RISK ALERT" : "🔒 REJECTED / REFUNDED";
+                contractStateClass = "bg-rose-500/10 text-rose-400 border-rose-500/20";
+                scoreTextColor = "text-rose-400";
+            }
+
+            document.getElementById('score-val').className = `text-4xl font-extrabold mt-1 ${scoreTextColor}`;
+
+            const badge = document.getElementById('level-badge');
+            badge.className = `mt-2 inline-block px-3 py-1 rounded-full text-xs font-bold border ${colorClass}`;
+            badge.innerText = `${level} RISK`;
+
+            const contractBox = document.getElementById('contract-state-box');
+            contractBox.className = `py-2 px-4 rounded-lg font-bold text-base border inline-block ${contractStateClass}`;
+            contractBox.innerText = contractState;
+
+            // Populate Reasons list
+            const reasonsList = document.getElementById('reasons-list');
+            reasonsList.innerHTML = '';
+            reasons.forEach(reason => {
+                const li = document.createElement('li');
+                li.className = "flex items-center space-x-2 bg-slate-900/30 px-3 py-1.5 rounded-lg border border-slate-800 text-sm text-slate-300";
+                li.innerHTML = `<span class="text-indigo-400 font-bold">•</span> <span>${reason}</span>`;
+                reasonsList.appendChild(li);
+            });
+
+            // Update Reviewer buttons & Stepper
+            if (isPendingReview) {
+                setReviewButtons(true);
+                updateStepper(3);
+                document.getElementById('audit-log-status').innerHTML = `Audit Log: Tx #${txId} locked in escrow. <span class="text-amber-400">Review required before execution.</span>`;
+            } else {
+                setReviewButtons(false, "Transaction executed automatically under smart contract policy.");
+                updateStepper(4);
+                document.getElementById('audit-log-status').innerHTML = `Audit Log: Tx #${txId} processed. TxHash: <span class="text-indigo-400">${data.txHash ? data.txHash.slice(0, 14) + '...' : 'Confirmed'}</span>`;
+            }
+        }
+
+        async function resolveTransaction(decision) {
+            const logBox = document.getElementById('audit-log-status');
+            const timestamp = new Date().toLocaleTimeString();
+
+            if (!currentTransactionId) {
+                logBox.innerHTML = `Audit Log: <span class="text-amber-400">Notice:</span> No active transaction selected to ${decision.toLowerCase()}.`;
+                return;
+            }
+
+            const endpoint = decision === 'APPROVED' 
+                ? 'http://localhost:5000/api/transaction/approve' 
+                : 'http://localhost:5000/api/transaction/reject';
+
+            logBox.innerText = `Audit Log: Sending ${decision} for Tx #${currentTransactionId}...`;
+            setReviewButtons(false, `Broadcasting ${decision} on-chain...`);
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ transactionId: currentTransactionId })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    throw new Error(result.error || `Server responded with status ${response.status}`);
+                }
+
+                updateStepper(4);
+                const contractBox = document.getElementById('contract-state-box');
+
+                if (decision === 'APPROVED') {
+                    logBox.innerHTML = `Audit Log: <span class="text-emerald-400">MANUAL APPROVAL CONFIRMED</span> for Tx #${currentTransactionId} at ${timestamp}. TxHash: ${result.txHash ? result.txHash.slice(0, 14) + '...' : 'Done'}`;
+                    contractBox.className = "py-2 px-4 rounded-lg font-bold text-base border inline-block bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+                    contractBox.innerText = "⚡ APPROVED & EXECUTED";
+                } else {
+                    logBox.innerHTML = `Audit Log: <span class="text-rose-400">MANUAL REJECTION CONFIRMED</span> for Tx #${currentTransactionId} at ${timestamp}. Funds refunded.`;
+                    contractBox.className = "py-2 px-4 rounded-lg font-bold text-base border inline-block bg-rose-500/10 text-rose-400 border-rose-500/20";
+                    contractBox.innerText = "🔒 REJECTED & REFUNDED";
+                }
+
+                fetchHistory();
+
+            } catch (error) {
+                console.error(`Review error (${decision}):`, error);
+                logBox.innerHTML = `Audit Log: <span class="text-rose-400">Action failed:</span> ${error.message}`;
+                setReviewButtons(true);
+            }
+        }
+
+        async function fetchHistory() {
+            try {
+                const res = await fetch('http://localhost:5000/api/transactions');
+                if (!res.ok) return;
+                const data = await res.json();
+                const tbody = document.getElementById('history-table-body');
+
+                if (!data.transactions || data.transactions.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" class="py-4 text-center text-slate-500 italic">No transactions recorded yet in this session.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = data.transactions.map(tx => {
+                    const statusText = tx.status === 5 || tx.status === 1 ? 'EXECUTED' : (tx.status === 4 ? 'REJECTED' : 'PENDING REVIEW');
+                    const statusBadge = statusText === 'EXECUTED' 
+                        ? '<span class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">EXECUTED</span>'
+                        : (statusText === 'REJECTED'
+                            ? '<span class="px-2 py-0.5 rounded text-[10px] bg-rose-500/10 text-rose-400 border border-rose-500/20">REJECTED</span>'
+                            : '<span class="px-2 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20">PENDING REVIEW</span>');
+                    
+                    const scoreColor = tx.riskScore > 70 ? 'text-rose-400' : (tx.riskScore > 30 ? 'text-amber-400' : 'text-emerald-400');
+                    const shortHash = tx.txHash ? `${tx.txHash.slice(0, 8)}...${tx.txHash.slice(-6)}` : '--';
+                    const shortAddr = tx.recipient ? `${tx.recipient.slice(0, 6)}...${tx.recipient.slice(-4)}` : '--';
+
+                    return `
+                        <tr class="hover:bg-slate-800/40 transition">
+                            <td class="py-2.5 px-4 font-bold text-slate-300">#${tx.transactionId}</td>
+                            <td class="py-2.5 px-4 text-slate-400" title="${tx.recipient}">${shortAddr}</td>
+                            <td class="py-2.5 px-4 font-semibold text-slate-200">${tx.amount} ETH</td>
+                            <td class="py-2.5 px-4 font-bold ${scoreColor}">${tx.riskScore}/100</td>
+                            <td class="py-2.5 px-4 font-semibold text-slate-300">${tx.riskLevel}</td>
+                            <td class="py-2.5 px-4">${statusBadge}</td>
+                            <td class="py-2.5 px-4 text-indigo-400 font-mono text-[11px]" title="${tx.txHash || ''}">${shortHash}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                console.warn("Could not fetch transaction history:", err);
+            }
+        }
+    </script>
+</body>
+</html>
