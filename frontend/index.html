@@ -31,10 +31,14 @@
                     <p class="text-xs text-slate-400">AI-Assisted Adaptive Smart Contract Engine</p>
                 </div>
             </div>
-            <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-3">
                 <span id="connection-status" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                    <span class="w-2 h-2 mr-1.5 bg-emerald-400 rounded-full animate-pulse"></span> Backend Connected (Port 5000)
+                    <span class="w-2 h-2 mr-1.5 bg-emerald-400 rounded-full animate-pulse"></span> Backend Active (5000)
                 </span>
+                <button id="connect-wallet-btn" onclick="connectMetaMask()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 transition shadow-sm">
+                    <span class="w-2 h-2 rounded-full bg-amber-400" id="wallet-indicator"></span>
+                    <span id="wallet-btn-text">🦊 Connect MetaMask</span>
+                </button>
             </div>
         </div>
     </header>
@@ -234,9 +238,60 @@
     <script>
         let currentTransactionId = null;
 
+        let userWalletAddress = null;
+
+        // Connect MetaMask
+        async function connectMetaMask() {
+            const btn = document.getElementById('connect-wallet-btn');
+            const btnText = document.getElementById('wallet-btn-text');
+            const indicator = document.getElementById('wallet-indicator');
+
+            if (typeof window.ethereum === 'undefined') {
+                alert("MetaMask is not installed. Please install the MetaMask extension to connect your wallet.");
+                return;
+            }
+
+            try {
+                btnText.innerText = "Connecting...";
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                
+                if (accounts && accounts.length > 0) {
+                    userWalletAddress = accounts[0];
+                    const shortAddr = `${userWalletAddress.slice(0, 6)}...${userWalletAddress.slice(-4)}`;
+                    btnText.innerText = shortAddr;
+                    indicator.className = "w-2 h-2 rounded-full bg-emerald-400";
+                    btn.className = "inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 transition shadow-sm font-mono";
+
+                    // Pre-fill recipient or display user wallet
+                    const auditBox = document.getElementById('audit-log-status');
+                    auditBox.innerHTML = `Audit Log: <span class="text-emerald-400">MetaMask Connected:</span> ${userWalletAddress}`;
+
+                    // Listen for account change
+                    window.ethereum.on('accountsChanged', (newAccounts) => {
+                        if (newAccounts.length === 0) {
+                            userWalletAddress = null;
+                            btnText.innerText = "🦊 Connect MetaMask";
+                            indicator.className = "w-2 h-2 rounded-full bg-amber-400";
+                        } else {
+                            userWalletAddress = newAccounts[0];
+                            btnText.innerText = `${userWalletAddress.slice(0, 6)}...${userWalletAddress.slice(-4)}`;
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error("MetaMask connection failed:", err);
+                btnText.innerText = "🦊 Connect MetaMask";
+            }
+        }
+
         // Fetch transaction history on load
         window.addEventListener('DOMContentLoaded', () => {
             fetchHistory();
+            if (typeof window.ethereum !== 'undefined' && window.ethereum.selectedAddress) {
+                userWalletAddress = window.ethereum.selectedAddress;
+                document.getElementById('wallet-btn-text').innerText = `${userWalletAddress.slice(0, 6)}...${userWalletAddress.slice(-4)}`;
+                document.getElementById('wallet-indicator').className = "w-2 h-2 rounded-full bg-emerald-400";
+            }
         });
 
         function updateStepper(step) {
